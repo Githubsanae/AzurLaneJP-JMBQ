@@ -16,11 +16,6 @@ jobs:
           java-version: "17"
           distribution: "adopt"
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v2
-        with:
-          api-level: 32
-          build-tools: 32.0.0
           
       - name: Check Android SDK
         run: |
