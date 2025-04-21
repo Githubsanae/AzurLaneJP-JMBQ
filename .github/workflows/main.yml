@@ -21,7 +21,7 @@ jobs:
         run: |
           echo "ANDROID_HOME is $ANDROID_HOME"
           ls -l $ANDROID_HOME/build-tools/
-          ls -l $ANDROID_HOME/build-tools/32.0.0/
+          ls -l $ANDROID_HOME/build-tools/34.0.0/
           
       - name: Build Perseus APK
         run: ./patch_perseus.sh
