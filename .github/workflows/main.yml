@@ -21,7 +21,6 @@ jobs:
         with:
           sdk-version: "34"  # 指定 Android SDK 版本
           build-tools: "33.0.2"  # 指定 Build Tools 版本
-          cmdline-tools-version: "13.0"  # 命令行工具版本
 
       - name: Build Perseus APK
         run: ./patch_perseus.sh
