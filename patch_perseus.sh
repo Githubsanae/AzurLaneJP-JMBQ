@@ -45,7 +45,7 @@ if [ ! -d "Perseus" ]; then
 fi
 
 echo "Decompile Azur Lane apk"
-java -jar apktool.jar d -f com.YoStarJP.AzurLane.apk
+java -jar apktool.jar d -f -q com.YoStarJP.AzurLane.apk
 
 echo "Copy Perseus libs"
 cp -r Perseus/. com.YoStarJP.AzurLane/lib/
@@ -56,7 +56,7 @@ sed -ir "s#\($oncreate\)#.method private static native init(Landroid/content/Con
 sed -ir "s#\($oncreate\)#\1\n    const-string v0, \"Perseus\"\n\n\    invoke-static {v0}, Ljava/lang/System;->loadLibrary(Ljava/lang/String;)V\n\n    invoke-static {p0}, Lcom/unity3d/player/UnityPlayerActivity;->init(Landroid/content/Context;)V\n#" com.YoStarJP.AzurLane/smali_classes2/com/unity3d/player/UnityPlayerActivity.smali
 
 echo "Build Patched Azur Lane apk"
-java -jar apktool.jar b -f com.YoStarJP.AzurLane -o build/com.YoStarJP.AzurLane.patched.apk
+java -jar apktool.jar b -f -q com.YoStarJP.AzurLane -o build/com.YoStarJP.AzurLane.patched.apk
 
 echo "Set Github Release version"
 s=($(./apkeep -a com.YoStarJP.AzurLane -l))
