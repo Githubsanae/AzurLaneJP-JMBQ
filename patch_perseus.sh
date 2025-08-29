@@ -66,44 +66,12 @@ echo "Copy JMBQ libs"
 cp -r azurlane/. "$DECOMPILED_DIR/lib/"
 
 echo "Patching Azur Lane with JMBQ"
-# Find the UnityPlayerActivity.smali file automatically
-smali_file=$(find "$DECOMPILED_DIR" -name "UnityPlayerActivity.smali" | head -n 1)
-
-if [ -z "$smali_file" ]; then
-    echo "Error: Could not find UnityPlayerActivity.smali in decompiled files."
-    exit 1
-fi
-echo "Found smali file at: $smali_file"
-
-# Find the line with the onCreate method definition
-oncreate_pattern=$(grep -m 1 '.method public onCreate(Landroid/os/Bundle;)V' "$smali_file")
-
-if [ -z "$oncreate_pattern" ]; then
-    echo "Error: Could not find onCreate method in $smali_file"
-    exit 1
-fi
-
-# Define the code to inject
-# The empty lines are for readability in the smali file
-injection_code="\n\n    const-string v0, \"JMBQ\"\n\n    invoke-static {v0}, Ljava/lang/System;->loadLibrary(Ljava/lang/String;)V"
-
-# Use a temporary file for sed to handle special characters in the pattern
-echo "$oncreate_pattern" > pattern.txt
-sed -i.bak "/$(sed 's/[/&]/\\&/g' pattern.txt)/a\\$injection_code" "$smali_file"
-rm pattern.txt
-rm "$smali_file.bak"
-
-echo "Patch applied successfully."
+oncreate=$(grep -n -m 1 'onCreate'  com.YoStarJP.AzurLane/smali_classes3/com/unity3d/player/UnityPlayerActivity.smali | sed  's/[0-9]*\:\(.*\)/\1/')
+sed -ir "N; s#\($oncreate\n    .locals 2\)#\1\n    const-string v0, \"JMBQ\"\n\n    invoke-static {v0}, Ljava/lang/System;->loadLibrary(Ljava/lang/String;)V\n#" com.YoStarJP.AzurLane/smali_classes3/com/unity3d/player/UnityPlayerActivity.smali
 
 echo "Build Patched Azur Lane apk"
-java -jar apktool.jar b -f -q "$DECOMPILED_DIR" -o build/com.YoStarJP.AzurLane.patched.apk
+java -jar apktool.jar -q -f b com.YoStarJP.AzurLane -o build/com.YoStarJP.AzurLane.patched.apk
 
 echo "Set Github Release version"
-s=($(/apkeep -a com.YoStarJP.AzurLane -l))
-if [ ${#s[@]} -gt 0 ]; then
-    echo "PERSEUS_VERSION=$(echo ${s[-1]})" >> $GITHUB_ENV
-else
-    echo "Warning: Could not determine app version from apkeep."
-fi
-
-echo "Done."
+s=($(./apkeep -a com.YoStarJP.AzurLane -l .))
+echo "PERSEUS_VERSION=$(echo ${s[-1]})" >> $GITHUB_ENV
