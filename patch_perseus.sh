@@ -1,10 +1,14 @@
 #!/bin/bash
 
+# Exit immediately if a command exits with a non-zero status.
+set -e
+
 # Download apkeep
 get_artifact_download_url () {
     # Usage: get_download_url <repo_name> <artifact_name> <file_type>
     local api_url="https://api.github.com/repos/$1/releases/latest"
-    local result=$(curl -s $api_url | jq ".assets[] | select(.name | contains(\"$2\") and contains(\"$3\") and (contains(\".sig\") | not)) | .browser_download_url")
+    # Use -s for silent, -f to fail silently on server errors
+    local result=$(curl -sfL $api_url | jq ".assets[] | select(.name | contains(\"$2\") and contains(\"$3\") and (contains(\".sig\") | not)) | .browser_download_url")
     echo ${result:1:-1}
 }
 
@@ -18,22 +22,28 @@ artifacts["apktool.jar"]="iBotPeaches/Apktool apktool .jar"
 for artifact in "${!artifacts[@]}"; do
     if [ ! -f $artifact ]; then
         echo "Downloading $artifact"
-        curl -L -o $artifact $(get_artifact_download_url ${artifacts[$artifact]})
+        url=$(get_artifact_download_url ${artifacts[$artifact]})
+        if [ -z "$url" ]; then
+            echo "Error: Could not get download URL for $artifact"
+            exit 1
+        fi
+        curl -L -o $artifact "$url"
     fi
 done
 
 chmod +x apkeep
 
 # Download Azur Lane
-download_azurlane () {
-    if [ ! -f "com.YoStarJP.AzurLane" ]; then
-        ./apkeep -a com.YoStarJP.AzurLane .
-    fi
-}
-
+echo "Get Azur Lane apk"
 if [ ! -f "com.YoStarJP.AzurLane.apk" ]; then
-    echo "Get Azur Lane apk"
-    download_azurlane
+    echo "Attempting to download Azur Lane package..."
+    ./apkeep -a com.YoStarJP.AzurLane .
+    
+    if [ ! -f "com.YoStarJP.AzurLane" ]; then
+        echo "Error: Failed to download Azur Lane package with apkeep."
+        exit 1
+    fi
+
     # Check if the downloaded file is an xapk
     if [[ $(file -b "com.YoStarJP.AzurLane" | cut -d' ' -f1) == "Zip" ]]; then
         echo "Extracting XAPK..."
@@ -43,7 +53,7 @@ if [ ! -f "com.YoStarJP.AzurLane.apk" ]; then
         if [ -n "$apk_file" ]; then
             cp "$apk_file" .
         else
-            echo "Could not find main APK in XAPK."
+            echo "Error: Could not find main APK in XAPK."
             exit 1
         fi
     else
@@ -51,7 +61,6 @@ if [ ! -f "com.YoStarJP.AzurLane.apk" ]; then
         mv com.YoStarJP.AzurLane com.YoStarJP.AzurLane.apk
     fi
 fi
-
 
 # Download JMBQ
 if [ ! -d "azurlane" ]; then
@@ -62,27 +71,54 @@ fi
 echo "Decompile Azur Lane apk"
 java -jar apktool.jar d -f -q com.YoStarJP.AzurLane.apk
 
+DECOMPILED_DIR="com.YoStarJP.AzurLane"
+if [ ! -d "$DECOMPILED_DIR" ]; then
+    echo "Error: Decompilation failed. Directory '$DECOMPILED_DIR' not found."
+    exit 1
+fi
+
 echo "Copy JMBQ libs"
-cp -r azurlane/. com.YoStarJP.AzurLane/lib/
+cp -r azurlane/. "$DECOMPILED_DIR/lib/"
 
 echo "Patching Azur Lane with JMBQ"
+# Find the UnityPlayerActivity.smali file automatically
+smali_file=$(find "$DECOMPILED_DIR" -name "UnityPlayerActivity.smali" | head -n 1)
+
+if [ -z "$smali_file" ]; then
+    echo "Error: Could not find UnityPlayerActivity.smali in decompiled files."
+    exit 1
+fi
+echo "Found smali file at: $smali_file"
+
 # Find the line with the onCreate method definition
-oncreate_line=$(grep -n -m 1 'onCreate' com.YoStarJP.AzurLane/smali_classes2/com/unity3d/player/UnityPlayerActivity.smali)
-# Extract just the text of the line, preserving indentation
-oncreate=$(echo "$oncreate_line" | sed 's/^[0-9]*://')
-smali_file="com.YoStarJP.AzurLane/smali_classes2/com/unity3d/player/UnityPlayerActivity.smali"
+oncreate_pattern=$(grep -m 1 '.method public onCreate(Landroid/os/Bundle;)V' "$smali_file")
 
-# Apply patch using the logic from the Chinese version script
-# This looks for the onCreate line followed by a .locals line and injects the loadLibrary call.
-# Note: This assumes the line after onCreate is '.locals 2'. This might need adjustment if the smali code changes.
-sed -ir "N; s#\($oncreate\n    .locals 2\)#\1\n\n    const-string v0, \"JMBQ\"\n\n    invoke-static {v0}, Ljava/lang/System;->loadLibrary(Ljava/lang/String;)V\n#" $smali_file
+if [ -z "$oncreate_pattern" ]; then
+    echo "Error: Could not find onCreate method in $smali_file"
+    exit 1
+fi
 
+# Define the code to inject
+# The empty lines are for readability in the smali file
+injection_code="\n\n    const-string v0, \"JMBQ\"\n\n    invoke-static {v0}, Ljava/lang/System;->loadLibrary(Ljava/lang/String;)V"
+
+# Use a temporary file for sed to handle special characters in the pattern
+echo "$oncreate_pattern" > pattern.txt
+sed -i.bak "/$(sed 's/[/&]/\\&/g' pattern.txt)/a\\$injection_code" "$smali_file"
+rm pattern.txt
+rm "$smali_file.bak"
+
+echo "Patch applied successfully."
 
 echo "Build Patched Azur Lane apk"
-java -jar apktool.jar b -f -q com.YoStarJP.AzurLane -o build/com.YoStarJP.AzurLane.patched.apk
+java -jar apktool.jar b -f -q "$DECOMPILED_DIR" -o build/com.YoStarJP.AzurLane.patched.apk
 
 echo "Set Github Release version"
-s=($(./apkeep -a com.YoStarJP.AzurLane -l))
-echo "PERSEUS_VERSION=$(echo ${s[-1]})" >> $GITHUB_ENV
+s=($(/apkeep -a com.YoStarJP.AzurLane -l))
+if [ ${#s[@]} -gt 0 ]; then
+    echo "PERSEUS_VERSION=$(echo ${s[-1]})" >> $GITHUB_ENV
+else
+    echo "Warning: Could not determine app version from apkeep."
+fi
 
 echo "Done."
