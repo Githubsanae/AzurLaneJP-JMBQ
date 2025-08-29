@@ -35,31 +35,11 @@ chmod +x apkeep
 
 # Download Azur Lane
 echo "Get Azur Lane apk"
-if [ ! -f "com.YoStarJP.AzurLane.apk" ]; then
-    echo "Attempting to download Azur Lane package..."
-    ./apkeep -a com.YoStarJP.AzurLane .
-    
-    if [ ! -f "com.YoStarJP.AzurLane" ]; then
-        echo "Error: Failed to download Azur Lane package with apkeep."
-        exit 1
-    fi
-
-    # Check if the downloaded file is an xapk
-    if [[ $(file -b "com.YoStarJP.AzurLane" | cut -d' ' -f1) == "Zip" ]]; then
-        echo "Extracting XAPK..."
-        unzip -o com.YoStarJP.AzurLane -d AzurLane
-        # Find the main apk file and copy it
-        apk_file=$(find AzurLane -name 'com.YoStarJP.AzurLane.apk' -type f | head -n 1)
-        if [ -n "$apk_file" ]; then
-            cp "$apk_file" .
-        else
-            echo "Error: Could not find main APK in XAPK."
-            exit 1
-        fi
-    else
-        # Assume it's a regular apk
-        mv com.YoStarJP.AzurLane com.YoStarJP.AzurLane.apk
-    fi
+if [ ! -f "com.YoStarJP.AzurLane" ]; then
+    echo "Get Azur Lane apk"
+    download_azurlane
+    unzip -o com.YoStarJP.AzurLane.xapk -d AzurLane
+    cp AzurLane/com.YoStarJP.AzurLane.apk .
 fi
 
 # Download JMBQ
