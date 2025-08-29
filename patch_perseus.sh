@@ -32,7 +32,12 @@ for artifact in "${!artifacts[@]}"; do
 done
 
 chmod +x apkeep
-
+# Download Azur Lane
+download_azurlane () {
+    if [ ! -f "com.YoStarJP.AzurLane" ]; then
+    ./apkeep -a com.YoStarJP.AzurLane .
+    fi
+}
 # Download Azur Lane
 echo "Get Azur Lane apk"
 if [ ! -f "com.YoStarJP.AzurLane" ]; then
