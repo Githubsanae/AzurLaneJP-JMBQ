@@ -70,7 +70,7 @@ oncreate=$(grep -n -m 1 'onCreate'  com.YoStarJP.AzurLane/smali_classes2/com/uni
 sed -ir "N; s#\($oncreate\n    .locals 2\)#\1\n    const-string v0, \"JMBQ\"\n\n    invoke-static {v0}, Ljava/lang/System;->loadLibrary(Ljava/lang/String;)V\n#" com.YoStarJP.AzurLane/smali_classes2/com/unity3d/player/UnityPlayerActivity.smali
 
 echo "Build Patched Azur Lane apk"
-java -jar apktool.jar -q -f b com.YoStarJP.AzurLane -o build/com.YoStarJP.AzurLane.patched.apk
+java -jar apktool.jar b -q -f com.YoStarJP.AzurLane -o build/com.YoStarJP.AzurLane.patched.apk
 
 echo "Set Github Release version"
 s=($(./apkeep -a com.YoStarJP.AzurLane -l .))
