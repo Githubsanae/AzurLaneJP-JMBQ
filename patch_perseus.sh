@@ -41,7 +41,6 @@ download_azurlane () {
 # Download Azur Lane
 echo "Get Azur Lane apk"
 if [ ! -f "com.YoStarJP.AzurLane" ]; then
-    echo "Get Azur Lane apk"
     download_azurlane
     unzip -o com.YoStarJP.AzurLane.xapk -d AzurLane
     cp AzurLane/com.YoStarJP.AzurLane.apk .
@@ -62,15 +61,21 @@ if [ ! -d "$DECOMPILED_DIR" ]; then
     exit 1
 fi
 
+
 echo "Copy JMBQ libs"
-cp -r azurlane/. "$DECOMPILED_DIR/lib/"
+cp -r azurlane/{lib,smali_classes4} com.YoStarJP.AzurLane/
 
 echo "Patching Azur Lane with JMBQ"
-oncreate=$(grep -n -m 1 'onCreate'  com.YoStarJP.AzurLane/smali_classes2/com/unity3d/player/UnityPlayerActivity.smali | sed  's/[0-9]*\:\(.*\)/\1/')
-sed -ir "N; s#\($oncreate\n    .locals 2\)#\1\n    const-string v0, \"JMBQ\"\n\n    invoke-static {v0}, Ljava/lang/System;->loadLibrary(Ljava/lang/String;)V\n#" com.YoStarJP.AzurLane/smali_classes2/com/unity3d/player/UnityPlayerActivity.smali
+cp ComponentActivity.smali com.YoStarJP.AzurLane/smali/androidx/core/app/
+cp AndroidManifest.xml com.YoStarJP.AzurLane/
+cp App.smali com.YoStarJP.AzurLane/smali_classes2/com/manjuu/azurlane/
+
+# echo "Patching Azur Lane with JMBQ"
+# oncreate=$(grep -n -m 1 'onCreate'  com.YoStarJP.AzurLane/smali_classes2/com/unity3d/player/UnityPlayerActivity.smali | sed  's/[0-9]*\:\(.*\)/\1/')
+# sed -ir "N; s#\($oncreate\n    .locals 2\)#\1\n    const-string v0, \"JMBQ\"\n\n    invoke-static {v0}, Ljava/lang/System;->loadLibrary(Ljava/lang/String;)V\n#" com.YoStarJP.AzurLane/smali_classes2/com/unity3d/player/UnityPlayerActivity.smali
 
 echo "Build Patched Azur Lane apk"
-java -jar apktool.jar b -q -f com.YoStarJP.AzurLane -o build/com.YoStarJP.AzurLane.patched.apk
+java -jar apktool.jar b -f -q com.YoStarJP.AzurLane -o build/com.YoStarJP.AzurLane.patched.apk
 
 echo "Set Github Release version"
 s=($(./apkeep -a com.YoStarJP.AzurLane -l .))
