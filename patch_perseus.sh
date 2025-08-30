@@ -66,6 +66,8 @@ echo "Copy JMBQ libs"
 cp -r azurlane/{lib,smali_classes4} com.YoStarJP.AzurLane/
 
 echo "Patching Azur Lane with JMBQ"
+ls com.YoStarJP.AzurLane/smali/androidx/core/app/
+ls com.YoStarJP.AzurLane/smali_classes2/com/manjuu/azurlane/
 cp ComponentActivity.smali com.YoStarJP.AzurLane/smali/androidx/core/app/
 cp AndroidManifest.xml com.YoStarJP.AzurLane/
 cp App.smali com.YoStarJP.AzurLane/smali_classes2/com/manjuu/azurlane/
