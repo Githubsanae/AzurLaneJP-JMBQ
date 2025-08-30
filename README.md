@@ -1,5 +1,5 @@
 # Power By JMBQ
-
+https://github.com/JMBQ/azurlane
 
 
 ## How to build
