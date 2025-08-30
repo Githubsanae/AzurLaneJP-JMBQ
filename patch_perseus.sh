@@ -49,7 +49,7 @@ fi
 # Download JMBQ
 if [ ! -d "azurlane" ]; then
     echo "Downloading JMBQ"
-    git clone https://github.com/feathers-l/azurlane
+    git clone https://github.com/Githubsanae/azurlane
 fi
 
 echo "Decompile Azur Lane apk"
